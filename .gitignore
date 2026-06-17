@@ -32,11 +32,23 @@ node_modules/
 .vercel
 .turbo
 package-lock.json
+.codex/
 
 demo/
 dist/
 packages-zip/
 .env
+vendor/
+storage/evidence/*
+storage/certificates/*
+storage/exports/*
+storage/imports/*
+storage/logs/*
+!storage/evidence/.gitkeep
+!storage/certificates/.gitkeep
+!storage/exports/.gitkeep
+!storage/imports/.gitkeep
+!storage/logs/.gitkeep
 sri.json
 
 # TypeScript

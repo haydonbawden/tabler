@@ -1,0 +1,102 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Controllers\AdminController;
+use App\Controllers\AuthController;
+use App\Controllers\ImportController;
+use App\Controllers\PublicController;
+use App\Controllers\SearchController;
+use App\Controllers\TableController;
+use App\Controllers\WorkflowController;
+use App\Core\Router;
+
+return function (Router $router): void {
+    $router->get('/', [PublicController::class, 'home']);
+    $router->get('/login', [AuthController::class, 'loginForm']);
+    $router->post('/login', [AuthController::class, 'login']);
+    $router->post('/logout', [AuthController::class, 'logout'], ['csrf', 'auth']);
+    $router->post('/table/preferences', [TableController::class, 'savePreferences'], ['csrf', 'auth']);
+    $router->post('/table/views', [TableController::class, 'saveView'], ['csrf', 'auth']);
+    $router->get('/register', [AuthController::class, 'registerForm']);
+    $router->post('/register', [AuthController::class, 'register']);
+    $router->get('/verify-email', [AuthController::class, 'verifyEmail']);
+    $router->get('/forgot-password', [AuthController::class, 'forgotPasswordForm']);
+    $router->post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    $router->get('/reset-password', [AuthController::class, 'resetPasswordForm']);
+    $router->post('/reset-password', [AuthController::class, 'resetPassword']);
+    $router->get('/verify-certificate', [PublicController::class, 'certificateForm']);
+    $router->post('/verify-certificate', [PublicController::class, 'certificateLookup']);
+    $router->post('/stripe/webhook', [PublicController::class, 'stripeWebhook'], []);
+
+    $admin = ['auth', 'role:super_admin,admin'];
+    $router->get('/admin/dashboard', [AdminController::class, 'dashboard'], $admin);
+    $router->get('/admin/search', [SearchController::class, 'admin'], $admin);
+    $router->get('/admin/clients', [AdminController::class, 'clients'], $admin);
+    $router->get('/admin/clients/{id}', [AdminController::class, 'clientDetail'], $admin);
+    $router->post('/admin/clients/{id}', [AdminController::class, 'saveClient'], ['csrf', ...$admin]);
+    $router->get('/admin/contacts', [AdminController::class, 'contacts'], $admin);
+    $router->get('/admin/contacts/{id}', [AdminController::class, 'contactDetail'], $admin);
+    $router->post('/admin/contacts/{id}', [AdminController::class, 'saveContact'], ['csrf', ...$admin]);
+    $router->get('/admin/audits', [AdminController::class, 'audits'], $admin);
+    $router->get('/admin/audits/{id}', [AdminController::class, 'auditDetail'], $admin);
+    $router->post('/admin/audits/{id}', [AdminController::class, 'saveAudit'], ['csrf', ...$admin]);
+    $router->post('/admin/audits/{id}/transition', [WorkflowController::class, 'transitionAudit'], ['csrf', ...$admin]);
+    $router->get('/admin/certificates', [AdminController::class, 'certificates'], $admin);
+    $router->get('/admin/certificates/{id}', [AdminController::class, 'certificateDetail'], $admin);
+    $router->post('/admin/certificates/{id}', [AdminController::class, 'saveCertificate'], ['csrf', ...$admin]);
+    $router->post('/admin/certificates/{id}/generate', [WorkflowController::class, 'generateCertificate'], ['csrf', ...$admin]);
+    $router->get('/admin/certificates/{id}/download', [WorkflowController::class, 'downloadCertificate'], $admin);
+    $router->get('/admin/users', [AdminController::class, 'users'], $admin);
+    $router->get('/admin/users/{id}', [AdminController::class, 'userDetail'], $admin);
+    $router->post('/admin/users/{id}', [AdminController::class, 'saveUser'], ['csrf', ...$admin]);
+    $router->get('/admin/audit-criteria', [AdminController::class, 'auditCriteria'], $admin);
+    $router->get('/admin/audit-criteria/{id}', [AdminController::class, 'auditCriterionDetail'], $admin);
+    $router->post('/admin/audit-criteria/{id}', [AdminController::class, 'saveAuditCriterion'], ['csrf', ...$admin]);
+    $router->get('/admin/email-templates', [AdminController::class, 'emailTemplates'], $admin);
+    $router->get('/admin/email-templates/{id}', [AdminController::class, 'emailTemplateDetail'], $admin);
+    $router->post('/admin/email-templates/{id}', [AdminController::class, 'saveEmailTemplate'], ['csrf', ...$admin]);
+    $router->post('/admin/certificate-templates', [AdminController::class, 'saveCertificateTemplate'], ['csrf', ...$admin]);
+    $router->get('/admin/reminder-rules', [AdminController::class, 'reminderRules'], $admin);
+    $router->get('/admin/imports', [ImportController::class, 'index'], $admin);
+    $router->post('/admin/imports', [ImportController::class, 'store'], ['csrf', ...$admin]);
+    $router->get('/admin/exports', [AdminController::class, 'exports'], $admin);
+    $router->get('/admin/payments', [AdminController::class, 'payments'], $admin);
+    $router->get('/admin/email-logs', [AdminController::class, 'emailLogs'], $admin);
+    $router->get('/admin/activity-logs', [AdminController::class, 'activityLogs'], $admin);
+    $router->get('/admin/settings', [AdminController::class, 'settings'], $admin);
+    $router->post('/admin/settings', [AdminController::class, 'saveSettings'], ['csrf', ...$admin]);
+
+    $auditor = ['auth', 'role:auditor,admin,super_admin'];
+    $router->get('/auditor/dashboard', [WorkflowController::class, 'auditorDashboard'], $auditor);
+    $router->get('/auditor/search', [SearchController::class, 'auditor'], $auditor);
+    $router->get('/auditor/audits', [WorkflowController::class, 'auditorAudits'], $auditor);
+    $router->get('/auditor/audits/{id}', [WorkflowController::class, 'auditReview'], $auditor);
+    $router->post('/auditor/audits/{id}/transition', [WorkflowController::class, 'transitionAudit'], ['csrf', ...$auditor]);
+    $router->post('/auditor/audits/{id}/criteria/{responseId}/comment', [WorkflowController::class, 'saveAuditorComment'], ['csrf', ...$auditor]);
+    $router->post('/auditor/audits/{id}/request-changes', [WorkflowController::class, 'requestChanges'], ['csrf', ...$auditor]);
+    $router->post('/auditor/audits/{id}/pass', [WorkflowController::class, 'passAudit'], ['csrf', ...$auditor]);
+    $router->post('/auditor/audits/{id}/fail', [WorkflowController::class, 'failAudit'], ['csrf', ...$auditor]);
+    $router->post('/auditor/audits/{id}/generate-certificate', [WorkflowController::class, 'generateCertificateForAudit'], ['csrf', ...$auditor]);
+
+    $client = ['auth', 'role:client'];
+    $router->get('/client/dashboard', [WorkflowController::class, 'clientDashboard'], $client);
+    $router->get('/client/search', [SearchController::class, 'client'], $client);
+    $router->get('/client/profile', [WorkflowController::class, 'clientProfile'], $client);
+    $router->get('/client/contacts', [WorkflowController::class, 'clientContacts'], $client);
+    $router->post('/client/contacts', [WorkflowController::class, 'addClientContact'], ['csrf', ...$client]);
+    $router->post('/client/contacts/{id}', [WorkflowController::class, 'updateClientContact'], ['csrf', ...$client]);
+    $router->get('/client/audits', [WorkflowController::class, 'clientAudits'], $client);
+    $router->get('/client/audits/{id}', [WorkflowController::class, 'clientAudit'], $client);
+    $router->post('/client/audits/{id}/transition', [WorkflowController::class, 'transitionAudit'], ['csrf', ...$client]);
+    $router->post('/client/audits/{id}/criteria/{responseId}', [WorkflowController::class, 'saveClientResponse'], ['csrf', ...$client]);
+    $router->post('/client/audits/{id}/criteria/{responseId}/files', [WorkflowController::class, 'uploadEvidence'], ['csrf', ...$client]);
+    $router->post('/client/audits/{id}/evidence/{fileId}/delete', [WorkflowController::class, 'deleteEvidence'], ['csrf', ...$client]);
+    $router->post('/client/audits/{id}/submit', [WorkflowController::class, 'submitAudit'], ['csrf', ...$client]);
+    $router->get('/client/certificates', [WorkflowController::class, 'clientCertificates'], $client);
+    $router->get('/client/certificates/{id}', [WorkflowController::class, 'clientCertificate'], $client);
+    $router->get('/client/certificates/{id}/download', [WorkflowController::class, 'downloadCertificate'], $client);
+    $router->post('/client/certificates/{id}/renew', [WorkflowController::class, 'renewCertificate'], ['csrf', ...$client]);
+
+    $router->get('/evidence/{id}/download', [WorkflowController::class, 'downloadEvidence'], ['auth']);
+};
